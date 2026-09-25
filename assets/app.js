@@ -411,6 +411,15 @@ async function renderPage(pageNum, { direction = 0, silent = false } = {}) {
   el.viewerEmpty.hidden = true;
   el.viewer.scrollTop = 0;
 
+  // hizalama kontrol: canvas yüksekliği scorrerin yüksekliğinden büyükse aşağıdan başlasın
+  const viewer = el.viewer;
+  const wrap = el.pageWrap;
+  if (wrap.clientHeight > viewer.clientHeight) {
+    viewer.style.alignItems = "flex-start";
+  } else {
+    viewer.style.alignItems = "center";
+  }
+
   updateChrome();
   savePosition(num);
 
