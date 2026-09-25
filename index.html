@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" />
+<meta name="theme-color" content="#2b0b12" />
+<title>Sevgilimin Kitabı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" />
+<link rel="stylesheet" href="assets/style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%92%97%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+
+<!-- ============ 1) GİRİŞ EKRANI ============ -->
+<section id="screen-gate" class="screen is-active">
+  <div class="hearts" id="hearts" aria-hidden="true"></div>
+
+  <div class="gate-inner">
+    <p class="gate-kicker">Senin için hazırlandı</p>
+    <h1 class="gate-title">Sevgilimin<br /><span>Kitabı</span></h1>
+    <div class="gate-rule"><span>&#10086;</span></div>
+
+    <button class="gate-btn" id="gateBtn">
+      <span class="gate-btn-label">Giriş</span>
+      <span class="gate-btn-sub">kitabı aç</span>
+    </button>
+
+    <p class="gate-foot">Seninle birlikte okunmak üzere &middot; kaldığın yer senin için saklanır</p>
+  </div>
+</section>
+
+<!-- ============ 2) ATLAS / KAPAK EKRANI ============ -->
+<section id="screen-cover" class="screen">
+  <div class="cover-stage">
+    <div class="cover-glow" aria-hidden="true"></div>
+
+    <div class="book" id="book" role="button" tabindex="0" aria-label="Kitabı aç">
+      <div class="book-shadow" aria-hidden="true"></div>
+      <div class="book-body">
+        <div class="book-spine" aria-hidden="true"></div>
+        <div class="book-front">
+          <img id="coverImg" src="assets/cover.jpg" alt="Kitap kapağı" decoding="async" />
+          <div class="book-ribbon" aria-hidden="true"></div>
+          <div class="book-sheen" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="book-pages" aria-hidden="true"></div>
+    </div>
+
+    <p class="cover-hint" id="coverHint">Kitaba dokun</p>
+  </div>
+
+  <div class="cover-panel">
+    <p class="cover-to">Senin için</p>
+    <h2 class="cover-title">Ecinniler</h2>
+    <p class="cover-author">Fyodor Mihayloviç Dostoyevski</p>
+
+    <div class="cover-ask" id="coverAsk" hidden>
+      <p class="cover-ask-q">Nereden devam edelim?</p>
+      <p class="cover-ask-p" id="coverProgress"></p>
+    </div>
+
+    <div class="cover-actions">
+      <button class="btn btn-gold" id="btnStart">Okumaya Başla</button>
+      <button class="btn btn-ghost" id="btnRestart" hidden>Baştan Oku</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3) OKUYUCU ============ -->
+<section id="screen-reader" class="screen">
+  <header class="topbar" id="topbar">
+    <button class="icon-btn" id="btnShelf" aria-label="Kapağa dön" title="Kapağa dön">
+      <svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13z"/></svg>
+    </button>
+
+    <div class="topbar-mid">
+      <span class="topbar-title">Ecinniler</span>
+      <span class="topbar-sub" id="topbarSub"></span>
+    </div>
+
+    <div class="topbar-right">
+      <span class="saved-pill" id="savedPill" title="Okuma konumun kayıtlı">
+        <svg viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="savedPillText">Sayfa 1</span>
+      </span>
+      <button class="icon-btn" id="btnInfo" aria-label="Bilgi" title="Bilgi">
+        <svg viewBox="0 0 24 24"><path d="M12 17h.01M12 14c0-2 2.5-2.2 2.5-4.2A2.5 2.5 0 0 0 9.6 9.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </button>
+    </div>
+    <div class="topbar-progress"><i id="progressBar"></i></div>
+  </header>
+
+  <main class="viewer" id="viewer">
+    <div class="page-wrap" id="pageWrap">
+      <canvas id="pageCanvas"></canvas>
+      <div class="page-loader" id="pageLoader"><span class="spinner"></span></div>
+    </div>
+    <p class="viewer-empty" id="viewerEmpty">Kitap hazırlanıyor…</p>
+  </main>
+
+  <nav class="navbar">
+    <button class="nav-btn" id="btnPrev" aria-label="Önceki sayfa">
+      <svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="nav-jump">
+      <input id="pageInput" type="number" inputmode="numeric" min="1" value="1" aria-label="Sayfa numarası" />
+      <span class="nav-total">/ <span id="pageTotal">?</span></span>
+    </div>
+
+    <button class="nav-btn" id="btnNext" aria-label="Sonraki sayfa">
+      <svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="nav-tools">
+      <button class="icon-btn sm" id="btnZoomOut" aria-label="Uzaklaştır" title="Uzaklaştır">&minus;</button>
+      <span class="zoom-val" id="zoomVal">%100</span>
+      <button class="icon-btn sm" id="btnZoomIn" aria-label="Yakınlaştır" title="Yakınlaştır">+</button>
+      <button class="icon-btn sm" id="btnFit" aria-label="Sığdır" title="Sayfaya sığdır">
+        <svg viewBox="0 0 24 24"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Atlanan ön/arka sayfalar için tıklama alanları -->
+  <button class="edge edge-prev" id="edgePrev" aria-label="Önceki sayfa"></button>
+  <button class="edge edge-next" id="edgeNext" aria-label="Sonraki sayfa"></button>
+</section>
+
+<!-- ============ 4) BİTİŞ ============ -->
+<section id="screen-end" class="screen">
+  <div class="hearts" id="heartsEnd" aria-hidden="true"></div>
+  <div class="end-inner">
+    <div class="end-flower">&#10086;</div>
+    <h2>Kitabı bitirdin</h2>
+    <p class="end-text" id="endText"></p>
+    <div class="end-actions">
+      <button class="btn btn-gold" id="btnAgain">Baştan başla</button>
+      <button class="btn btn-ghost" id="btnBackToRead">Son sayfalara dön</button>
+    </div>
+  </div>
+</section>
+
+<!-- Bilgi paneli -->
+<div class="sheet" id="infoSheet" hidden>
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-body">
+    <h3>Nasıl kullanılır?</h3>
+    <ul>
+      <li><b>Okurken</b> sayfa kendiliğinden kaydedilir. Aynı tarayıcıda tekrar girdiğinde <b>nereden devam edeceğini</b> sorarız.</li>
+      <li><b>Sayfayı değiştir:</b> ok tuşları, sağ/sol kenarlara tıklama veya alttaki oklar.</li>
+      <li><b>Mobilde</b> parmağını sağa/sola kaydır.</li>
+      <li><b>Yakınlaştır</b> için alttaki <b>+</b> / <b>&minus;</b> düğmeleri.</li>
+    </ul>
+
+    <div class="sync-box" id="syncBox">
+      <h4>Başka cihazda devam et</h4>
+      <p class="sheet-note" id="syncNote">
+        Aşağıdaki bağlantıyı telefonunda ya da başka bir cihazda açarsan,
+        kaldığın sayfadan devam edersin.
+      </p>
+      <div class="sync-row">
+        <input type="text" id="syncLink" class="sync-input" readonly
+               aria-label="Okuma yerini taşıyan bağlantı" />
+        <button class="btn btn-gold" id="btnCopyLink">Kopyala</button>
+      </div>
+      <p class="sync-cloud" id="syncCloud" hidden></p>
+    </div>
+
+    <p class="sheet-note" id="infoNote"></p>
+    <div class="end-actions">
+      <button class="btn btn-ghost" id="btnForget" data-close>Okuma yerimi sıfırla</button>
+      <button class="btn btn-gold" data-close>Tamam</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="assets/app.js"></script>
+</body>
+</html>

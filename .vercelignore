@@ -1,0 +1,6 @@
+node_modules
+tools
+.git
+.vercel
+*.log
+package-lock.json

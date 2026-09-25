@@ -1,0 +1,7 @@
+node_modules
+.vercel
+tools
+*.log
+package-lock.json
+.DS_Store
+Thumbs.db

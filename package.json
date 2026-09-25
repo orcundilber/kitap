@@ -1,0 +1,11 @@
+{
+  "name": "sevgilimin-kitabi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sevgilimin Kitabı - PDF okuyucu (statik site, Vercel)",
+  "scripts": {
+    "dev": "npx --yes serve@14 -l 4173 .",
+    "kapak": "node tools/cover.mjs",
+    "test": "node tools/e2e.mjs"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": ".",
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "no-referrer" }
+      ]
+    },
+    {
+      "source": "/assets/(app.js|sync.js|firebase-config.js|style.css)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/vendor/pdfjs/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/assets/cover.jpg",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800" }
+      ]
+    },
+    {
+      "source": "/ecinniler.pdf",
+      "headers": [
+        { "key": "Content-Type", "value": "application/pdf" },
+        { "key": "Accept-Ranges", "value": "bytes" },
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
+  ]
+}
