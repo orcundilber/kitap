@@ -98,7 +98,10 @@
       <canvas id="pageCanvas"></canvas>
       <div class="page-loader" id="pageLoader"><span class="spinner"></span></div>
     </div>
-    <p class="viewer-empty" id="viewerEmpty">Kitap hazırlanıyor…</p>
+    <div class="viewer-loading" id="viewerLoading" hidden>
+      <p class="viewer-empty" id="viewerEmpty"><span id="loadLabel">Kitap açılıyor</span><span class="load-pct" id="loadPct"></span></p>
+      <div class="load-bar"><i id="loadBar"></i></div>
+    </div>
   </main>
 
   <nav class="navbar">

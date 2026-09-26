@@ -254,7 +254,8 @@ svg { width: 22px; height: 22px; fill: currentColor; display: block; }
 .book {
   position: relative;
   width: min(66vw, 258px);
-  aspect-ratio: 734 / 1212;
+  /* cover.jpg ile birebir ayni oran -> object-fit:cover kirpmasi olmaz */
+  aspect-ratio: 800 / 1274;
   transform-style: preserve-3d;
   transform: rotateY(-13deg) rotateX(4deg);
   transition: transform .75s var(--ease);
@@ -636,6 +637,47 @@ svg { width: 22px; height: 22px; fill: currentColor; display: block; }
   color: rgba(246, 239, 226, .5);
 }
 .viewer-empty[hidden] { display: none; }
+
+/* --- yükleme yüzdesi --- */
+.viewer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+}
+.viewer-loading[hidden] { display: none; }
+.viewer-loading .viewer-empty { position: static; }
+
+.load-pct {
+  display: inline-block;
+  min-width: 4.2em;
+  margin-left: 4px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-300);
+}
+
+.load-bar {
+  width: min(220px, 62%);
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .1);
+  overflow: hidden;
+}
+.load-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--rose-400), var(--gold));
+  transition: width .25s var(--ease);
+}
 
 /* --- alt bar --- */
 .navbar {

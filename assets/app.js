@@ -1,5 +1,5 @@
 /* =========================================================
-   Sevgilimin Kitabı
+   Sevgilimin Kitaplığı
    - Giriş ekranı -> kitap atlası (kapak) -> pdf.js okuyucu
    - Okuma konumu localStorage'a otomatik kaydedilir
    ========================================================= */
@@ -21,7 +21,6 @@ import {
 /* ---------- AYARLAR (kitap değiştirmek istersen burayı düzenle) ---------- */
 const CONFIG = {
   pdfUrl: "./ecinniler.pdf",
-  coverUrl: "assets/cover.jpg",
   title: "Ecinniler",
   author: "Fyodor Mihayloviç Dostoyevski",
   storageKey: "sevgilimin-kitabi:v1",
@@ -52,6 +51,10 @@ const el = {
   savedPillText: $("savedPillText"),
   progressBar: $("progressBar"),
   viewer: $("viewer"),
+  viewerLoading: $("viewerLoading"),
+  loadLabel: $("loadLabel"),
+  loadPct: $("loadPct"),
+  loadBar: $("loadBar"),
   pageWrap: $("pageWrap"),
   canvas: $("pageCanvas"),
   viewerEmpty: $("viewerEmpty"),
@@ -254,22 +257,74 @@ function initCover() {
 
 /* =========================================================
    3) PDF YÜKLEME
+   ------------------------------------------------------------
+   PDF'i kendimiz fetch ile indiriyoruz ki yüzde GERÇEK olsun.
+   (pdf.js aralık istekleri kullandığı için kendi onProgress'i
+    belge hazır olunca 100'e atlamıyor, 30-40%'de takılı kalıyordu.)
+   Aynı anda tek indirme: arka plan ön yüklemesi + okuyucu aynı isteği paylaşır.
    ========================================================= */
+let docPromise = null;
+
+/** content-length bilinen tek seferlik indirme, gerçek yüzde bildirir */
+async function downloadPdf(onProgress) {
+  const res = await fetch(CONFIG.pdfUrl);
+  if (!res.ok) throw new Error(`PDF indirilemedi (${res.status})`);
+
+  const total = Number(res.headers.get("content-length")) || 0;
+  const chunks = [];
+  let loaded = 0;
+
+  if (res.body && total > 0) {
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.length;
+      onProgress(Math.round((loaded / total) * 100));
+    }
+  } else {
+    // stream yoksa (eski tarayıcı) tek parça al
+    const buf = new Uint8Array(await res.arrayBuffer());
+    chunks.push(buf);
+    loaded = buf.length;
+  }
+
+  onProgress(100);
+
+  const out = new Uint8Array(loaded);
+  let off = 0;
+  for (const c of chunks) {
+    out.set(c, off);
+    off += c.length;
+  }
+  return out.buffer;
+}
+
 async function loadDocument() {
   if (state.doc) return state.doc;
+  if (docPromise) return docPromise;
 
-  const task = pdfjsLib.getDocument({
-    url: CONFIG.pdfUrl,
-    cMapUrl: "vendor/pdfjs/cmaps/",
-    cMapPacked: true,
-    standardFontDataUrl: "vendor/pdfjs/standard_fonts/",
-    disableAutoFetch: false,
-    disableStream: false,
-  });
+  docPromise = (async () => {
+    const data = await downloadPdf(setLoadPercent);
+    const doc = await pdfjsLib.getDocument({
+      data,
+      cMapUrl: "vendor/pdfjs/cmaps/",
+      cMapPacked: true,
+      standardFontDataUrl: "vendor/pdfjs/standard_fonts/",
+    }).promise;
 
-  state.doc = await task.promise;
-  state.numPages = state.doc.numPages;
-  return state.doc;
+    state.doc = doc;
+    state.numPages = doc.numPages;
+    return doc;
+  })();
+
+  try {
+    return await docPromise;
+  } catch (err) {
+    docPromise = null; // başarısız: tekrar denenebilsin
+    throw err;
+  }
 }
 
 async function preloadInBackground() {
@@ -409,6 +464,7 @@ async function renderPage(pageNum, { direction = 0, silent = false } = {}) {
   el.pageWrap.classList.remove("is-loading");
   el.pageWrap.classList.add("is-ready");
   el.viewerEmpty.hidden = true;
+  el.viewerLoading.hidden = true;
   el.viewer.scrollTop = 0;
 
   // hizalama kontrol: canvas yüksekliği scorrerin yüksekliğinden büyükse aşağıdan başlasın
@@ -509,6 +565,7 @@ function paintFromCache(target) {
   el.pageWrap.classList.remove("is-loading");
   el.pageWrap.classList.add("is-ready");
   el.viewerEmpty.hidden = true;
+  el.viewerLoading.hidden = true;
   el.viewer.scrollTop = 0;
   updateChrome();
   savePosition(target);
@@ -533,18 +590,50 @@ const prev = () => goTo(state.page - 1);
 /* =========================================================
    5) OKUYUCU EKRANI
    ========================================================= */
+
+/** yükleme yüzdesini güncelle (0-100) */
+let lastPct = -1;
+function setLoadPercent(pct) {
+  if (!Number.isFinite(pct)) return;
+  const p = Math.max(0, Math.min(100, pct));
+  if (p === lastPct) return;
+  lastPct = p;
+  el.loadPct.textContent = `%${p}`;
+  el.loadBar.style.width = p + "%";
+}
+
+function showLoading(text) {
+  el.loadLabel.textContent = text;
+  el.viewerLoading.hidden = false;
+  el.viewerEmpty.hidden = false;
+}
+
 async function enterReader() {
   showScreen("reader");
-  el.viewerEmpty.hidden = false;
-  el.viewerEmpty.textContent = "Kitap açılıyor…";
+
+  // kitap zaten ön yüklendiyse sahte yüzde gösterme, direkt sayfaya geç
+  const wasReady = !!state.doc;
+  if (!wasReady) {
+    showLoading("Kitap açılıyor");
+    setLoadPercent(0);
+  }
 
   try {
     await loadDocument();
   } catch (err) {
     console.error(err);
-    el.viewerEmpty.textContent = "Kitap yüklenemedi. Sayfayı yenilemeyi dene.";
+    el.viewerLoading.hidden = true;
+    el.viewerEmpty.hidden = false;
+    el.loadLabel.textContent = "Kitap yüklenemedi. Sayfayı yenilemeyi dene.";
+    el.loadPct.textContent = "";
     toast("Kitap yüklenemedi");
     return;
+  }
+
+  if (!wasReady) {
+    // PDF bitti, şimdi ilk sayfa çiziliyor
+    showLoading("Sayfa hazırlanıyor");
+    setLoadPercent(100);
   }
 
   const start = Math.min(Math.max(1, state.startPage || 1), state.numPages);
@@ -698,7 +787,7 @@ function celebrate() {
    BAŞLAT
    ========================================================= */
 function boot() {
-  document.title = `${CONFIG.title} — Sevgilimin Kitabı`;
+  document.title = `${CONFIG.title} — Sevgilimin Kitaplığı`;
 
   // tarayıcı konsolundan incelemek için (üretimde zararsız)
   window.__kit = { state, cache, CONFIG, goTo, pdfjsLib, renderPage, loadDocument };
